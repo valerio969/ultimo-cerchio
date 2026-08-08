@@ -92,7 +92,13 @@ export default defineConfig(({ command }) => ({
       workbox: {
         // Al primo caricamento mette in cache TUTTI questi file. Da quel momento
         // il gioco parte dalla memoria del telefono, e funziona in aereo.
-        globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2,webp,mp3,ogg}'],
+        //
+        // ATTENZIONE ALL'ELENCO DEI TIPI DI FILE: se aggiungi al gioco un file
+        // con un'estensione che non è scritta qui, quel file NON viene salvato, e
+        // in modalità aereo mancherà. Non compare nessun errore: il gioco parte e
+        // semplicemente quella cosa non c'è. È già successo con i suoni: erano
+        // .wav, "wav" non era nell'elenco, e il gioco offline restava muto.
+        globPatterns: ['**/*.{js,css,html,png,svg,ico,woff2,webp,mp3,ogg,wav,m4a}'],
 
         // Le versioni vecchie della cache vengono buttate via, così il telefono
         // non accumula copie del gioco a ogni aggiornamento.

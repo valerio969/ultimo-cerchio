@@ -1,25 +1,31 @@
 import Phaser from 'phaser';
 import { CONFIG } from '../config.js';
 import { scalaDi } from '../scala.js';
-import { nomeTextureNemico } from '../scene/SceneAvvio.js';
+
+/**
+ * Gli sprite di Kenney sono disegnati con la punta verso l'ALTO.
+ * Phaser invece, quando dici "rotazione 0", intende punta verso DESTRA.
+ * Quindi ogni volta che orientiamo una nave verso qualcosa dobbiamo aggiungere
+ * un quarto di giro, altrimenti tutte le navi volano di fianco.
+ */
+export const CORREZIONE_SPRITE = Math.PI / 2;
 
 /**
  * IL NEMICO
  *
  * Entra da un bordo dello schermo e ti insegue, senza furbizie: punta sempre
- * dritto verso di te.
+ * dritto verso di te, e si gira per guardarti.
  *
  * ---------------------------------------------------------------------------
  * UN SOLO POOL PER TUTTI I TIPI
  * ---------------------------------------------------------------------------
  * Esistono tre tipi di nemico (normale, veloce, corazzato) ma un solo gruppo di
- * oggetti riutilizzabili. Quando un nemico viene "acceso", cambia immagine,
- * stazza e caratteristiche diventando il tipo richiesto.
+ * oggetti riutilizzabili. Quando un nemico viene "acceso", cambia disegno,
+ * stazza, colore e caratteristiche diventando il tipo richiesto.
  *
- * L'alternativa sarebbe stata un pool separato per ogni tipo, ma vorrebbe dire
- * tenere in memoria tre volte più oggetti di quelli che servono davvero: se in
- * un'ondata ci sono solo nemici normali, i pool degli altri due tipi resterebbero
- * pieni e inutilizzati.
+ * L'alternativa sarebbe un pool separato per tipo, ma vorrebbe dire tenere in
+ * memoria tre volte più oggetti di quelli che servono: se in un'ondata ci sono
+ * solo nemici normali, i pool degli altri due resterebbero pieni e inutilizzati.
  *
  * ---------------------------------------------------------------------------
  * OBJECT POOLING — perché questo oggetto non viene mai distrutto
@@ -27,22 +33,19 @@ import { nomeTextureNemico } from '../scene/SceneAvvio.js';
  * Creare e distruggere oggetti in continuazione è la causa numero uno degli
  * scatti nei giochi sul telefono: ogni tanto il browser deve fermarsi a
  * ripulire la memoria, e in quel momento perdi fotogrammi.
- *
- * Quindi all'avvio ne creiamo un numero fisso (config.nemici.nemiciInPool) e poi
- * li riusiamo: attiva() lo accende, spegni() lo mette da parte.
  */
 export default class Nemico extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
-    // Nasce col primo tipo disponibile: tanto attiva() gli darà quello giusto.
-    const primoTipo = Object.keys(CONFIG.tipiNemico)[0];
-    super(scene, x, y, nomeTextureNemico(primoTipo));
+    // Nasce col disegno del primo tipo disponibile: tanto attiva() gli darà
+    // quello giusto.
+    const primoTipo = Object.values(CONFIG.tipiNemico)[0];
+    super(scene, x, y, primoTipo.sprite);
 
     this.scala = scalaDi(scene);
 
     // Riempiti da attiva()
     this.tipo = null;
     this.vita = 0;
-    this.vitaIniziale = 0;
     this.danno = 0;
     this.punti = 0;
     this.colore = 0xffffff;
@@ -57,18 +60,17 @@ export default class Nemico extends Phaser.Physics.Arcade.Sprite {
   /**
    * Il corpo fisico non esiste nel costruttore: il gruppo prima costruisce
    * l'oggetto e solo dopo gli attacca il corpo. La scena chiama questo metodo
-   * subito dopo aver creato il pool.
+   * subito dopo aver creato il pool, e attiva() lo richiama a ogni cambio di tipo.
    */
   configuraCorpo() {
-    this.body.setSize(this.width * 0.8, this.height * 0.8, true);
+    const frazione = CONFIG.nemici.riquadroCollisione;
+    this.body.setSize(this.width * frazione, this.height * frazione, true);
   }
 
   /**
    * Accende un nemico preso dal pool, lo trasforma nel tipo richiesto e lo mette
    * in posizione.
    *
-   * @param {number} x
-   * @param {number} y
    * @param {object} tipo             una voce di CONFIG.tipiNemico
    * @param {number} rinforzoVita     1 = vita normale, 1.5 = una volta e mezza
    * @param {number} rinforzoVelocita 1 = velocità normale
@@ -79,17 +81,15 @@ export default class Nemico extends Phaser.Physics.Arcade.Sprite {
     this.danno = tipo.danno;
     this.punti = tipo.punti;
 
-    this.vitaIniziale = Math.round(tipo.vita * rinforzoVita);
-    this.vita = this.vitaIniziale;
+    this.vita = Math.round(tipo.vita * rinforzoVita);
     this.velocitaInseguimento = tipo.velocita * rinforzoVelocita * this.scala;
 
-    // L'ORDINE DI QUESTE TRE RIGHE CONTA:
-    //   1. cambiamo immagine, 2. la portiamo alla dimensione giusta,
+    // L'ORDINE DI QUESTE RIGHE CONTA:
+    //   1. cambiamo disegno, 2. lo portiamo alla dimensione giusta,
     //   3. e solo allora ridimensioniamo il riquadro delle collisioni.
-    // Il riquadro viene calcolato sull'immagine attuale e sul ridimensionamento
-    // attuale: se lo facessimo prima, resterebbe della stazza del tipo precedente
-    // e verresti colpito dal nulla.
-    this.setTexture(nomeTextureNemico(tipo.etichetta));
+    // Il riquadro si calcola sul disegno attuale: se lo facessimo prima,
+    // resterebbe della stazza del tipo precedente e verresti colpito dal nulla.
+    this.setTexture(tipo.sprite);
     this.diametro = tipo.dimensione * this.scala;
     this.setDisplaySize(this.diametro, this.diametro);
 
@@ -97,7 +97,8 @@ export default class Nemico extends Phaser.Physics.Arcade.Sprite {
     this.configuraCorpo();
 
     this.lampoFino = 0;
-    this.clearTint();
+    // Gli sprite sono bianchi: il colore glielo diamo noi qui.
+    this.setTint(this.colore);
     this.setAlpha(1);
     this.setActive(true);
     this.setVisible(true);
@@ -107,7 +108,6 @@ export default class Nemico extends Phaser.Physics.Arcade.Sprite {
   /** Rimette il nemico nel pool, pronto per essere riusato. */
   spegni() {
     this.body.setVelocity(0, 0);
-    this.clearTint();
     this.lampoFino = 0;
     this.disableBody(true, true);
   }
@@ -122,12 +122,15 @@ export default class Nemico extends Phaser.Physics.Arcade.Sprite {
         Math.cos(angolo) * this.velocitaInseguimento,
         Math.sin(angolo) * this.velocitaInseguimento
       );
+      // Si gira verso di te. Nessuna morbidezza: un nemico che ti punta dritto
+      // deve sembrare deciso.
+      this.setRotation(angolo + CORREZIONE_SPRITE);
     }
 
-    // Spegniamo il lampo bianco quando è scaduto.
+    // Spegniamo il lampo bianco quando è scaduto, tornando al colore del tipo.
     if (this.lampoFino !== 0 && tempo >= this.lampoFino) {
       this.lampoFino = 0;
-      this.clearTint();
+      this.setTint(this.colore);
     }
   }
 
@@ -141,8 +144,9 @@ export default class Nemico extends Phaser.Physics.Arcade.Sprite {
     this.vita -= quantita;
 
     if (CONFIG.feedback.lampoNemico.attivo && this.vita > 0) {
-      // setTintFill colora TUTTA la sagoma di bianco, invece di sfumarla:
-      // a un ottantesimo di secondo è l'unica versione che si vede davvero.
+      // setTintFill riempie TUTTA la sagoma di bianco pieno, invece di
+      // moltiplicare il colore: a un ottantesimo di secondo è l'unica versione
+      // che si vede davvero. Poi setTint rimette il colore normale.
       this.setTintFill(0xffffff);
       this.lampoFino = tempo + CONFIG.feedback.lampoNemico.durata;
     }

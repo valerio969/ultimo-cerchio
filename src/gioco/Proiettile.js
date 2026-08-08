@@ -14,7 +14,7 @@ import { scalaDi } from '../scala.js';
  */
 export default class Proiettile extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
-    super(scene, x, y, 'proiettile');
+    super(scene, x, y, CONFIG.sprite.proiettile);
 
     const scala = scalaDi(scene);
     this.diametro = CONFIG.arma.dimensioneProiettile * scala;
@@ -23,6 +23,8 @@ export default class Proiettile extends Phaser.Physics.Arcade.Sprite {
 
     this.setDisplaySize(this.diametro, this.diametro);
     this.setDepth(8);
+    // Lo sprite è bianco: gli diamo il colore scelto in config.
+    this.setTint(CONFIG.colori.proiettile);
   }
 
   /**
