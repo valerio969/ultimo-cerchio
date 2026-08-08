@@ -159,6 +159,44 @@ window.addEventListener('orientationchange', () => {
   setTimeout(adattaAlloSchermo, 120);
 });
 
+/**
+ * SBLOCCO DELL'AUDIO SU IPHONE
+ *
+ * Safari vieta a una pagina web di emettere suoni prima che l'utente abbia
+ * toccato lo schermo: è una difesa contro le pagine che partono a urlare da sole.
+ * Finché non tocchi, il motore audio del browser resta "sospeso" e ogni suono
+ * cade nel vuoto, senza nessun errore.
+ *
+ * Phaser di solito se ne occupa da sé, ma qui lo facciamo anche noi, e a livello
+ * della pagina invece che del gioco. Il motivo è delicato: Safari accetta il
+ * risveglio del motore audio SOLO se avviene dentro la gestione vera dell'evento
+ * del browser. Phaser invece mette gli eventi in fila e li elabora al fotogramma
+ * dopo — troppo tardi, per Safari.
+ */
+let audioSbloccato = false;
+function sbloccaAudio() {
+  if (audioSbloccato) return;
+
+  const gestore = gioco.sound;
+  if (!gestore) return;
+
+  if (gestore.context && gestore.context.state === 'suspended') {
+    gestore.context.resume();
+  }
+  if (gestore.locked && typeof gestore.unlock === 'function') {
+    gestore.unlock();
+  }
+
+  audioSbloccato = true;
+  for (const evento of ['pointerdown', 'touchstart', 'keydown']) {
+    window.removeEventListener(evento, sbloccaAudio);
+  }
+}
+
+for (const evento of ['pointerdown', 'touchstart', 'keydown']) {
+  window.addEventListener(evento, sbloccaAudio, { passive: true });
+}
+
 // Togliamo la scritta di caricamento: da qui in poi comanda Phaser.
 gioco.events.once('ready', () => {
   document.getElementById('caricamento')?.remove();

@@ -59,6 +59,8 @@ export default class SceneGioco extends Phaser.Scene {
     this.controlli = new Controlli(this);
     this.ondate = new GestoreOndate(this);
 
+    this.creaSchermataInizio();
+
     this.scale.on('resize', this.alRidimensionamento, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.allaChiusura, this);
   }
@@ -305,24 +307,6 @@ export default class SceneGioco extends Phaser.Scene {
       .setDepth(1100)
       .setAlpha(0);
 
-    // Suggerimento iniziale, sparisce da solo dopo qualche secondo
-    this.testoAiuto = this.add
-      .text(
-        this.scale.width / 2, this.scale.height * 0.74,
-        'trascina un dito per muoverti\nspari da solo',
-        { ...this.stileTesto(CONFIG.hud.dimensioneTestoPiccolo, CONFIG.colori.testoSpento), align: 'center' }
-      )
-      .setOrigin(0.5)
-      .setDepth(1000);
-
-    this.tweens.add({
-      targets: this.testoAiuto,
-      alpha: 0,
-      delay: 3400,
-      duration: 900,
-      onComplete: () => this.testoAiuto.destroy(),
-    });
-
     this.prossimoAggiornamentoFps = 0;
     this.posizionaHud();
     this.disegnaBarraVita();
@@ -348,6 +332,16 @@ export default class SceneGioco extends Phaser.Scene {
     this.testoOndata.setPosition(this.hudSinistra, this.hudAlto + this.altezzaVita * 1.6);
     this.testoFps.setPosition(this.hudSinistra, this.hudBasso);
     this.testoAnnuncio.setPosition(this.scale.width / 2, this.scale.height * 0.38);
+
+    // La schermata d'inizio esiste solo prima del primo tocco: dopo è distrutta.
+    if (this.testoInizio && this.testoInizio.active) {
+      const centroY = this.scale.height * 0.62;
+      this.testoInizio.setPosition(this.scale.width / 2, centroY);
+      this.sottotestoInizio.setPosition(
+        this.scale.width / 2,
+        centroY + CONFIG.hud.dimensioneTestoInizio * this.scala * 1.6
+      );
+    }
   }
 
   disegnaBarraVita() {
@@ -380,6 +374,73 @@ export default class SceneGioco extends Phaser.Scene {
     // Aggiorniamo quattro volte al secondo: leggibile, e non spreca lavoro.
     this.prossimoAggiornamentoFps = tempo + 250;
     this.testoFps.setText(`${Math.round(this.game.loop.actualFps)} fps`);
+  }
+
+  // ==========================================================================
+  // SCHERMATA D'INIZIO — "tocca per cominciare"
+  //
+  // Non è solo una cortesia: è quello che fa funzionare l'audio su iPhone.
+  //
+  // Safari non lascia suonare niente a una pagina web finché non hai toccato lo
+  // schermo. Il nostro gioco però spara da solo, quindi partendo subito i primi
+  // colpi finivano nel silenzio, e il suono "si accendeva" solo quando cominciavi
+  // a muovere il dito. Non è un difetto aggirabile: è una regola di iOS.
+  //
+  // Aspettando il tuo tocco prima di cominciare, il motore audio è già sveglio
+  // quando parte il primo colpo. E come effetto collaterale hai anche un momento
+  // per prepararti, invece di trovarti i nemici addosso appena apri il gioco.
+  // ==========================================================================
+
+  creaSchermataInizio() {
+    this.inAttesaDiTocco = true;
+
+    const centroX = this.scale.width / 2;
+    const centroY = this.scale.height * 0.62;
+
+    // L'invito a toccare: grande e chiaro, è la prima cosa che devi leggere.
+    this.testoInizio = this.add
+      .text(centroX, centroY, 'TOCCA PER COMINCIARE', {
+        ...this.stileTesto(CONFIG.hud.dimensioneTestoInizio, CONFIG.colori.testo),
+        align: 'center',
+      })
+      .setOrigin(0.5)
+      .setDepth(1100);
+
+    // Le istruzioni: più piccole e spente, si leggono dopo.
+    this.sottotestoInizio = this.add
+      .text(
+        centroX,
+        centroY + CONFIG.hud.dimensioneTestoInizio * this.scala * 1.6,
+        'trascina un dito per muoverti\nspari da solo',
+        {
+          ...this.stileTesto(CONFIG.hud.dimensioneTestoPiccolo, CONFIG.colori.testoSpento),
+          align: 'center',
+        }
+      )
+      .setOrigin(0.5)
+      .setDepth(1100);
+
+    // Un pulsare lento, così si capisce che il gioco sta aspettando te
+    this.tweens.add({
+      targets: this.testoInizio,
+      alpha: { from: 1, to: 0.35 },
+      duration: 900,
+      yoyo: true,
+      repeat: -1,
+    });
+
+    this.input.once('pointerdown', this.iniziaPartita, this);
+    this.input.keyboard.once('keydown', this.iniziaPartita, this);
+  }
+
+  /** Si parte: da qui in poi il gioco corre. */
+  iniziaPartita() {
+    if (!this.inAttesaDiTocco) return;
+    this.inAttesaDiTocco = false;
+
+    this.tweens.killTweensOf(this.testoInizio);
+    this.testoInizio.destroy();
+    this.sottotestoInizio.destroy();
   }
 
   // ==========================================================================
@@ -434,6 +495,13 @@ export default class SceneGioco extends Phaser.Scene {
 
   update(tempo, delta) {
     if (this.partitaFinita) return;
+
+    // Finché non hai toccato, l'arena è ferma: nessun nemico, nessun colpo,
+    // nessun suono. Vedi solo le stelle e la tua nave che ti aspetta.
+    if (this.inAttesaDiTocco) {
+      this.aggiornaFps(tempo);
+      return;
+    }
 
     // Cerchiamo il nemico bersagliato UNA VOLTA SOLA per fotogramma. Serve sia
     // per girare la nave verso di lui, sia per sparargli: cercarlo due volte
