@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!--
+    ICONA DI ULTIMO CERCHIO — questo è il file di partenza, modificabile.
+
+    Racconta il gioco in un colpo d'occhio: tu (il quadrato blu) chiuso dentro
+    l'anello rosso dei nemici, con i tuoi proiettili che partono da soli.
+
+    Se vuoi cambiarla, modifica questo file e poi rigenera le PNG con:
+        npm run icone
+
+    NOTA TECNICA: tutto il disegno sta dentro il cerchio centrale di raggio 205,
+    che è la "zona sicura" delle icone. Android su alcuni telefoni ritaglia
+    l'icona a cerchio o a goccia: stando dentro quella zona non si taglia niente.
+  -->
+
+  <!-- Sfondo pieno. Serve che sia pieno e non trasparente: iOS non accetta la
+       trasparenza nelle icone della schermata Home, ci metterebbe del nero. -->
+  <rect width="512" height="512" fill="#0a0a12"/>
+
+  <!-- L'anello rosso: i nemici che ti circondano -->
+  <circle cx="256" cy="256" r="150" fill="none" stroke="#ff4d5e" stroke-width="30"/>
+
+  <!-- Il quadrato blu: tu -->
+  <rect x="198" y="198" width="116" height="116" rx="24" fill="#4d9fff"/>
+
+  <!-- Tre proiettili in volo -->
+  <circle cx="256" cy="161" r="11" fill="#ffffff"/>
+  <circle cx="323" cy="323" r="11" fill="#ffffff"/>
+  <circle cx="178" cy="311" r="11" fill="#ffffff"/>
+</svg>
