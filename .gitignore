@@ -1,0 +1,14 @@
+# Le librerie scaricate da npm: si riscaricano con "npm install",
+# non ha senso salvarle (sono decine di migliaia di file)
+node_modules/
+
+# Il gioco compilato: si rigenera con "npm run build"
+dist/
+dev-dist/
+
+# Roba di macOS e log
+.DS_Store
+*.log
+
+# Impostazioni locali di Claude Code (possono contenere permessi personali)
+.claude/settings.local.json
