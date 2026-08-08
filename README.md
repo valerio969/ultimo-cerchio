@@ -58,6 +58,10 @@ file fa da nemico rosso, arancione o viola. I colori stanno in `src/config.js`.
 I suoni originali sono in formato OGG, che iPhone non sa leggere: sono stati
 convertiti in WAV.
 
+**La musica di sottofondo non è un file:** è generata dal codice nota per nota
+(`src/gioco/Musica.js`), con la Web Audio API. Pesa zero byte, gira in loop per
+sempre senza stacchi, e si intensifica man mano che l'arena si affolla.
+
 L'icona (`public/icona.svg`) è disegnata a mano; le PNG si rigenerano con
 `npm run icone`.
 

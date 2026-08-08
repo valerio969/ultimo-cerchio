@@ -112,6 +112,35 @@ export const CONFIG = {
   },
 
   // ==========================================================================
+  // MUSICA DI SOTTOFONDO
+  //
+  // Non è un file: è generata dal codice, nota per nota, mentre giochi.
+  // Un tappeto sonoro grave e continuo, un battito lento, e qualche nota che
+  // compare qua e là. Più navi ci sono a schermo, più si fa insistente.
+  //
+  // Perché generata e non un file: pesa zero byte, non ha problemi di licenza,
+  // gira in loop per sempre senza il buchino che si sente quando un file audio
+  // ricomincia, e la puoi regolare da qui invece di dover rifare un brano.
+  //
+  // Se non ti piace, `attiva: false` e sparisce senza toccare nient'altro.
+  // ==========================================================================
+  musica: {
+    attiva: true,
+    volume: 0.3,               // rispetto agli effetti, tenuta indietro
+
+    battitiAlMinuto: 76,       // il passo del battito. 60 = uno al secondo
+    notaBase: 110,             // in hertz. 110 = un La grave. 82 = più cupa
+
+    // Quante navi a schermo servono per arrivare alla massima intensità.
+    // Con poche navi senti quasi solo il tappeto sonoro; man mano che si
+    // affollano entrano il battito e le note.
+    naviPerMassimaIntensita: 20,
+
+    // Quanto tempo ci mette la musica a spegnersi quando muori
+    dissolvenzaFinale: 1200,
+  },
+
+  // ==========================================================================
   // GIOCATORE — la tua navicella
   // ==========================================================================
   giocatore: {
