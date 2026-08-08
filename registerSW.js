@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/ultimo-cerchio/sw.js', { scope: '/ultimo-cerchio/' })})}

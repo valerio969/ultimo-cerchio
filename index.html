@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ultimo Cerchio</title>
+
+  <!--
+    viewport-fit=cover  → il gioco occupa tutto lo schermo, notch compreso.
+                          Senza questo, env(safe-area-inset-*) restituisce sempre 0.
+    user-scalable=no    → chiede di non fare zoom. ATTENZIONE: Safari su iPhone
+                          IGNORA questa richiesta dalla versione iOS 10. Lo zoom
+                          lo blocchiamo davvero con il CSS e con il JavaScript qui sotto.
+  -->
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+  <meta name="theme-color" content="#0a0a12" />
+  <meta name="description" content="Sparatutto 2D dall'alto. Un dito, mira automatica." />
+
+  <!--
+    ICONE. I percorsi sono scritti SENZA la barra iniziale, di proposito: così
+    funzionano sia in locale (dove il gioco sta alla radice) sia online su GitHub
+    Pages (dove sta dentro una sottocartella). Con la barra iniziale, online il
+    telefono le cercherebbe nel posto sbagliato e metterebbe un'icona grigia.
+  -->
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+  <link rel="icon" type="image/svg+xml" href="icona.svg" />
+  <!-- Questa è quella che iPhone usa per la schermata Home -->
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+
+  <!-- Comportamento da app quando il gioco è aggiunto alla schermata Home dell'iPhone -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Cerchio" />
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      /* position: fixed + inset: 0 è il modo più affidabile su iPhone per dire
+         "questa pagina è alta esattamente uno schermo e non si muove". */
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+
+      background: #0a0a12;
+      color: #e8e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+      /* Toglie il "pull to refresh" e il rimbalzo elastico ai bordi */
+      overscroll-behavior: none;
+      /* Dice al browser: nessuna gesture di default (niente scroll, niente pinch-zoom) */
+      touch-action: none;
+      /* Niente selezione del testo trascinando il dito */
+      -webkit-user-select: none;
+      user-select: none;
+      /* Niente menu "Copia / Cerca" tenendo premuto */
+      -webkit-touch-callout: none;
+      /* Niente lampo grigio quando tocchi */
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Contenitore del gioco */
+    #gioco {
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    /* Sul computer lo schermo è largo e orizzontale, mentre il gioco è pensato
+       verticale. Qui lo mostriamo dentro un riquadro a forma di telefono, centrato,
+       così quello che vedi sul Mac assomiglia a quello che vedrai sul telefono.
+       I telefoni in verticale non superano mai 700px di larghezza, quindi questa
+       regola non li tocca. */
+    @media (min-width: 700px) {
+      #gioco {
+        max-width: 440px;
+        margin: 0 auto;
+        box-shadow: 0 0 0 1px #23233a;
+      }
+    }
+
+    canvas {
+      display: block;
+      touch-action: none;
+    }
+
+    /* Elemento invisibile che serve solo a MISURARE le safe area dell'iPhone
+       (lo spazio occupato dal notch in alto e dalla barra in basso).
+       Il CSS conosce quei valori tramite env(), il JavaScript no: mettendoli come
+       padding di questo elemento, il JavaScript può leggerli e passarli al gioco. */
+    #misura-safe-area {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 0;
+      height: 0;
+      visibility: hidden;
+      pointer-events: none;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-right: env(safe-area-inset-right, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      padding-left: env(safe-area-inset-left, 0px);
+    }
+
+    /* Schermata di caricamento, sostituita dal gioco appena Phaser è pronto */
+    #caricamento {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      letter-spacing: 0.2em;
+      color: #4a4a66;
+      text-transform: uppercase;
+    }
+  </style>
+  <script type="module" crossorigin src="/ultimo-cerchio/assets/index-CP5x_EDf.js"></script>
+<link rel="manifest" href="/ultimo-cerchio/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/ultimo-cerchio/registerSW.js"></script></head>
+<body>
+  <div id="misura-safe-area"></div>
+  <div id="gioco"></div>
+  <div id="caricamento">Ultimo Cerchio</div>
+
+  <script>
+    // ---------------------------------------------------------------------------
+    // BLOCCO DELLE GESTURE DEL BROWSER
+    // Il CSS sopra copre la maggior parte dei casi, ma Safari su iPhone ha bisogno
+    // anche di questi blocchi espliciti. Senza, durante la partita il dito farebbe
+    // scorrere la pagina o zoomare invece di muovere il personaggio.
+    // ---------------------------------------------------------------------------
+
+    // Zoom con due dita (gesture proprietarie di Safari)
+    for (const evento of ['gesturestart', 'gesturechange', 'gestureend']) {
+      document.addEventListener(evento, (e) => e.preventDefault(), { passive: false });
+    }
+
+    // Scroll e pull-to-refresh. passive:false è obbligatorio, altrimenti il browser
+    // ignora la richiesta di annullare il comportamento di default.
+    document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+
+    // Zoom con doppio tocco rapido
+    let ultimoTocco = 0;
+    document.addEventListener('touchend', (e) => {
+      const ora = Date.now();
+      if (ora - ultimoTocco < 320) e.preventDefault();
+      ultimoTocco = ora;
+    }, { passive: false });
+
+    // Menu contestuale (tasto destro sul Mac, tocco prolungato sul telefono)
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
+  </script>
+
+</body>
+</html>
