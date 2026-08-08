@@ -239,8 +239,15 @@ export const CONFIG = {
     },
 
     // --- Lo schermo trema ---
+    // SPENTO su tua richiesta: il sobbalzo dello schermo dava fastidio.
+    // Il danno subito resta comunque leggibilissimo, perché lo schermo lampeggia
+    // di rosso e il personaggio si mette a lampeggiare.
+    // Se un giorno vuoi riprovarlo, rimetti true qui sotto. I due valori di
+    // intensità sono già tarati: 0.0022 sulle uccisioni è quasi impercettibile,
+    // 0.012 sul danno è un sobbalzo netto. Puoi anche riaccenderlo e abbassare
+    // solo dannoIntensita, per esempio a 0.005, per averne un accenno.
     screenShake: {
-      attivo: true,
+      attivo: false,
       // Quando uccidi un nemico: una scossa minima, quasi subliminale.
       // Se la alzi troppo, con dieci nemici che muoiono insieme lo schermo
       // diventa illeggibile.
