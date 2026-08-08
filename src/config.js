@@ -29,15 +29,12 @@
  * ----------------------------------------------------------------------------
  * SE VUOI SMANETTARE, PARTI DA QUI
  * ----------------------------------------------------------------------------
- *   giocatore.velocita          → quanto sei agile
- *   arma.intervalloSparo        → più BASSO = spari più veloce
- *   nemici.velocita             → quanto ti stanno addosso
- *   ondate.intervalloComparsa   → più BASSO = arrivano più spesso
- *   ondate.quantoAumenta        → più ALTO = la partita si fa dura più in fretta
- *
- * I numeri qui sotto sono un punto di partenza, non un vangelo. Una partita
- * dovrebbe durare intorno al minuto: se muori troppo presto alza
- * ondate.intervalloComparsa, se non muori mai abbassalo.
+ *   giocatore.velocita               → quanto sei agile
+ *   arma.intervalloSparo             → più BASSO = spari più veloce
+ *   ondate.nemiciPrimaOndata         → quanto è dura la partenza
+ *   ondate.nemiciInPiuPerOndata      → quanto rapidamente si fa dura
+ *   tipiNemico.<tipo>.velocita       → quanto ti stanno addosso
+ *   feedback.screenShake.attivo      → se lo schermo trema quando colpisci
  */
 
 export const CONFIG = {
@@ -58,13 +55,14 @@ export const CONFIG = {
     sfondo: 0x0a0a12,          // nero-blu molto scuro
     griglia: 0x1b1b33,         // le linee della griglia dell'arena
     giocatore: 0x4d9fff,       // il quadrato blu
-    nemico: 0xff4d5e,          // i cerchi rossi
     proiettile: 0xffffff,      // i puntini bianchi
     vita: 0x4dffa0,            // barra della vita piena
     vitaBassa: 0xff4d5e,       // barra della vita quasi vuota
     vitaSfondo: 0x24243a,      // la parte vuota della barra della vita
     testo: 0xe8e8f0,           // il colore del punteggio e delle scritte
     testoSpento: 0x6a6a8a,     // scritte secondarie
+    annuncioOndata: 0xffd54d,  // la scritta "ONDATA 3"
+    pericolo: 0xff4d5e,        // la scritta "ELIMINATO" del game over
   },
 
   // ==========================================================================
@@ -112,53 +110,168 @@ export const CONFIG = {
   // ==========================================================================
   arma: {
     intervalloSparo: 260,      // ogni quanto parte un colpo. PIÙ BASSO = più veloce
-    danno: 100,                // con nemici.vita a 100, un colpo uccide
+    danno: 100,                // quanta vita toglie un colpo
     raggioTiro: 470,           // oltre questa distanza il nemico non viene bersagliato
     velocitaProiettile: 950,   // quanto vola veloce il puntino bianco
     dimensioneProiettile: 12,
 
     // Quanti proiettili vengono preparati in anticipo all'avvio (object pooling).
     // Non vengono mai creati o distrutti durante la partita: si riusano.
-    // Se lo alzi troppo consumi memoria per niente; se è troppo basso, con tanti
-    // nemici a schermo qualche colpo non parte.
     proiettiliInPool: 200,
   },
 
   // ==========================================================================
-  // NEMICI — i cerchi rossi
+  // TIPI DI NEMICO
+  //
+  // Ogni tipo ha il suo colore, la sua stazza e il suo carattere. Puoi
+  // aggiungerne di nuovi: basta aggiungere una voce qui e citarla in
+  // composizioneOndate più sotto. Il resto del codice si adatta da solo.
+  //
+  // REGOLA D'ORO PER LA VITA: l'arma fa 100 di danno per colpo (arma.danno).
+  // Quindi vita 100 = muore con un colpo, vita 300 = ne serve tre.
+  // Tieni i numeri multipli di 100 e saprai sempre quanti colpi servono.
+  // ==========================================================================
+  tipiNemico: {
+    normale: {
+      etichetta: 'normale',
+      colore: 0xff4d5e,        // rosso
+      dimensione: 42,
+      velocita: 150,
+      vita: 100,               // un colpo
+      danno: 14,               // quanta vita ti toglie al contatto
+      punti: 10,
+    },
+
+    veloce: {
+      etichetta: 'veloce',
+      colore: 0xffa64d,        // arancione: si distingue a colpo d'occhio dal rosso
+      dimensione: 32,          // più piccolo, quindi più difficile da colpire
+      velocita: 275,           // quasi il doppio del normale: ti raggiunge
+      vita: 100,               // un colpo: fragile, ma va preso
+      danno: 10,
+      punti: 15,
+    },
+
+    corazzato: {
+      etichetta: 'corazzato',
+      colore: 0xb44dff,        // viola
+      dimensione: 60,          // grosso e ben visibile
+      velocita: 92,            // lento: hai il tempo di scappare, non di ignorarlo
+      vita: 400,               // QUATTRO colpi
+      danno: 24,               // se ti prende, fa male
+      punti: 40,
+    },
+  },
+
+  // ==========================================================================
+  // NEMICI — impostazioni comuni a tutti i tipi
   // ==========================================================================
   nemici: {
-    dimensione: 42,
-    velocita: 150,             // quanto ti inseguono veloci
-    vita: 100,                 // con arma.danno a 100, muoiono con un colpo
-    danno: 14,                 // quanta vita ti togliono quando ti toccano
-    punti: 10,                 // punteggio per ogni nemico eliminato
-
-    nemiciInPool: 120,         // quanti nemici vengono preparati in anticipo
+    nemiciInPool: 140,         // quanti nemici vengono preparati in anticipo
     margineIngresso: 40,       // quanto fuori dal bordo appaiono, per entrare in scena
   },
 
   // ==========================================================================
-  // ONDATE — il ritmo con cui arrivano i nemici
+  // ONDATE
   //
-  // NOTA: in Milestone 1 questa è la versione semplice, un nemico ogni tanto,
-  // con la frequenza che sale piano piano. Le ondate vere con la scritta
-  // "ONDATA 3" e la pausa di respiro arrivano in Milestone 2.
-  //
-  // IMPORTANTE PER IL BILANCIAMENTO: spari circa 4 volte al secondo e ogni colpo
-  // uccide. Quindi finché i nemici arrivano meno di 4 volte al secondo, li tieni
-  // a bada senza fatica. Il gioco diventa pericoloso quando l'intervallo scende
-  // sotto i 250 millisecondi, e ci arriva in poco più di mezzo minuto.
+  // Il ritmo della partita: compare la scritta "ONDATA N", arrivano i nemici,
+  // li elimini tutti, respiri un attimo, e si ricomincia più difficile.
   // ==========================================================================
   ondate: {
-    ritardoInizio: 900,        // quanto respiri prima che arrivi il primo nemico
-    intervalloComparsa: 620,   // ogni quanto appare un nemico. PIÙ BASSO = più duro
+    ritardoPrimaOndata: 900,   // quanto respiri prima che cominci tutto
+    durataAnnuncio: 1500,      // quanto resta a schermo la scritta "ONDATA N"
+    pausaTraOndate: 2000,      // il respiro dopo aver ripulito un'ondata
+    intervalloTraNemici: 430,  // ogni quanto entra un nemico DENTRO un'ondata
 
-    // Ogni tot tempo la frequenza aumenta, così la partita si fa sempre più dura
-    // e prima o poi finisce, invece di andare avanti all'infinito.
-    ogniQuantoAumenta: 3500,   // ogni 3,5 secondi il gioco si fa più cattivo
-    quantoAumenta: 55,         // di quanti millisecondi si accorcia l'attesa
-    intervalloMinimo: 150,     // il ritmo non scende sotto questo, o è impossibile
+    // --- Quanti nemici per ondata ---
+    nemiciPrimaOndata: 5,
+    nemiciInPiuPerOndata: 3,   // ondata 1 = 5, ondata 2 = 8, ondata 3 = 11...
+    nemiciMassimiPerOndata: 60,
+
+    // --- Quanto si rinforzano i nemici ondata dopo ondata ---
+    // Velocità: cresce da subito, poco per volta. Non cambia quanti colpi
+    // servono per uccidere, quindi si può alzare senza confondere.
+    velocitaInPiuPerOndata: 0.035,   // +3,5% a ondata
+
+    // Vita: cresce SOLO dall'ondata indicata in poi, e questo è voluto.
+    // Se la vita crescesse dall'ondata 2, un nemico normale passerebbe da
+    // "muore con un colpo" a "ne servono due" senza preavviso, e il gioco
+    // sembrerebbe rotto. Meglio un salto di difficoltà dichiarato, più tardi.
+    vitaCresceDaOndata: 6,
+    vitaInPiuPerOndata: 0.12,        // +12% a ondata, a partire da quella sopra
+
+    // Nessun rinforzo va oltre questo: serve a non arrivare a nemici
+    // matematicamente inuccidibili.
+    rinforzoMassimo: 3.0,
+
+    // --- Quali tipi compaiono, e quando ---
+    // "daOndata" = la prima ondata in cui quel tipo può comparire.
+    // "peso" = quanto è probabile rispetto agli altri disponibili. Con normale
+    // a 10 e veloce a 6, su 16 nemici circa 10 sono normali e 6 veloci.
+    composizione: [
+      { tipo: 'normale', daOndata: 1, peso: 10 },
+      { tipo: 'veloce', daOndata: 3, peso: 7 },
+      { tipo: 'corazzato', daOndata: 5, peso: 3 },
+    ],
+  },
+
+  // ==========================================================================
+  // FEEDBACK — quello che rende il gioco "succoso"
+  //
+  // Niente di qui dentro cambia le regole: cambia solo quanto senti i colpi.
+  // Se qualcosa ti dà fastidio o ti fa girare la testa, puoi spegnerlo
+  // singolarmente senza toccare nient'altro.
+  // ==========================================================================
+  feedback: {
+    // --- Il nemico lampeggia di bianco quando lo colpisci ---
+    // Questo NON è un fronzolo: senza, un nemico che richiede quattro colpi
+    // sembra semplicemente non reagire, e pensi che l'arma sia rotta.
+    lampoNemico: {
+      attivo: true,
+      durata: 80,
+    },
+
+    // --- Lo schermo lampeggia di rosso quando prendi danno ---
+    flashDanno: {
+      attivo: true,
+      durata: 220,
+      colore: { r: 255, g: 60, b: 80 },
+    },
+
+    // --- Lo schermo trema ---
+    screenShake: {
+      attivo: true,
+      // Quando uccidi un nemico: una scossa minima, quasi subliminale.
+      // Se la alzi troppo, con dieci nemici che muoiono insieme lo schermo
+      // diventa illeggibile.
+      uccisioneDurata: 60,
+      uccisioneIntensita: 0.0022,
+      // Quando prendi danno: più forte, deve farti sobbalzare.
+      dannoDurata: 190,
+      dannoIntensita: 0.012,
+    },
+
+    // --- Particelle quando un nemico esplode ---
+    particelle: {
+      attive: true,
+      quantita: 9,             // quante schegge per nemico
+      velocitaMinima: 90,
+      velocitaMassima: 340,
+      durata: 460,
+      dimensione: 8,
+    },
+
+    // --- I numeri di danno che salgono ---
+    // Compaiono SOLO sui nemici che sopravvivono al colpo. Sui nemici che
+    // muoiono con un colpo solo sarebbero rumore inutile: vedi già che spariscono.
+    // Sui corazzati invece servono, perché ti dicono che stai facendo progressi.
+    numeriDanno: {
+      attivi: true,
+      dimensione: 26,
+      salita: 90,              // di quanto sale il numero mentre svanisce
+      durata: 620,
+      quantiInPool: 24,
+    },
   },
 
   // ==========================================================================
@@ -170,6 +283,8 @@ export const CONFIG = {
     larghezzaBarraVita: 260,   // larghezza della barra della vita
     dimensioneTestoPunteggio: 42,
     dimensioneTestoPiccolo: 20,
+    dimensioneAnnuncioOndata: 54,
+    dimensioneContatoreOndata: 20,
   },
 
   // ==========================================================================

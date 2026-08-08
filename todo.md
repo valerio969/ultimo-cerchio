@@ -141,42 +141,88 @@ Legenda: `[ ]` da fare · `[x]` fatto · **(TU)** = tocca a te, non a Claude
 
 ---
 
-## Milestone 2 — Il gioco diventa divertente
-
-**Non si inizia finché la Milestone 1 non è verificata sul telefono.**
+## Milestone 2 — Il gioco diventa divertente ✅ FATTA
 
 ### 2.1 Ondate vere
 
-- [ ] Ondate distinte con pausa di respiro tra l'una e l'altra
-- [ ] Scritta "ONDATA N" all'inizio di ogni ondata
-- [ ] Difficoltà progressiva: numero, velocità e vita dei nemici salgono
-- [ ] Curva di difficoltà interamente guidata da `config.js`
+- [x] Macchina a stati a quattro fasi: **annuncio → ingresso → pulizia → pausa**
+- [x] Scritta "ONDATA N" al centro, e "RIPULITA" quando la finisci
+- [x] Contatore dell'ondata anche nell'interfaccia, sotto la barra della vita
+- [x] Un'ondata finisce solo quando l'ultimo nemico è a terra
+- [x] Numero di nemici: 5 la prima, +3 a ogni ondata, fino a 60
+- [x] **Verificato**: tempi esatti come da configurazione — annuncio a 0,82s,
+      ingresso a 2,32s, ripulita a 7,12s, ondata 2 a 9,12s
+- [x] Se il pool è pieno il nemico riprova al giro dopo invece di far restare
+      l'ondata bloccata per sempre in attesa di un nemico mai entrato
 
 ### 2.2 Tipi di nemico
 
-- [ ] Nemico normale
-- [ ] Nemico veloce e fragile
-- [ ] Nemico lento e resistente (serve il lampo di colpito, vedi 2.3)
-- [ ] Quali tipi appaiono in quale ondata, deciso da `config.js`
+- [x] **normale** (rosso): 42 di stazza, 1 colpo, 10 punti — dall'ondata 1
+- [x] **veloce** (arancione): piccolo e quasi il doppio veloce, 1 colpo, 15 punti
+      — dall'ondata 3
+- [x] **corazzato** (viola): grosso e lento, **4 colpi**, fa male, 40 punti
+      — dall'ondata 5
+- [x] Un solo pool per tutti i tipi: il nemico cambia immagine e stazza quando
+      viene acceso, invece di tenere tre pool di cui due quasi sempre inutilizzati
+- [x] Quali tipi e con che frequenza, deciso da `config.ondate.composizione`
+- [x] **Verificato**: il corazzato muore in esattamente 4 colpi, il riquadro di
+      collisione si aggiorna col tipo (50 px su un'immagine di 63)
 
 ### 2.3 Feedback visivo
 
-- [ ] Lampo bianco sul nemico quando lo colpisci — **necessario** prima di mettere
-      nemici che richiedono più di un colpo, altrimenti sembra che il colpo non conti
-- [ ] Flash rosso dello schermo quando prendi danno
-- [ ] Screen shake (regolabile, disattivabile)
-- [ ] Particelle quando un nemico esplode
-- [ ] Numeri di danno che salgono
+- [x] Lampo bianco sul nemico colpito — e **solo se sopravvive**: lampeggiare un
+      nemico che sta morendo non comunica niente
+- [x] Flash rosso su tutto lo schermo quando prendi danno
+- [x] Screen shake: minimo sulle uccisioni, forte quando prendi danno
+- [x] Particelle: un emettitore per tipo, già del colore giusto. Uno solo
+      "contagerebbe" il colore alle schegge già in volo delle altre esplosioni
+- [x] Numeri di danno, che salgono e svaniscono
+- [x] **Verificato**: 9 schegge del colore giusto, scossa e flash rosso attivi
+- [x] Tutto si può spegnere singolarmente da `config.feedback`
 
-### 2.4 Pulizia della configurazione
+### 2.4 Le scelte prese per non fare rumore inutile
 
-- [ ] Rileggere `config.js` da capo: niente numeri nascosti nel codice
-- [ ] **(TU)** Provare a cambiare qualche numero da solo e vedere l'effetto
+- [x] I numeri di danno compaiono **solo sui nemici che sopravvivono al colpo**.
+      Su chi muore con un colpo sarebbero rumore: vedi già che sparisce. Sui
+      corazzati invece servono, perché dicono che stai facendo progressi
+- [x] La vita dei nemici cresce **solo dall'ondata 6 in poi**. Se crescesse
+      dall'ondata 2, un nemico normale passerebbe da "muore con un colpo" a "ne
+      servono due" senza preavviso, e il gioco sembrerebbe rotto
+- [x] La velocità invece cresce da subito: non cambia quanti colpi servono,
+      quindi si può alzare senza confondere
 
-### 2.5 Verifica
+### 2.5 Niente allocazioni durante la partita
 
-- [ ] **(TU)** Prova sul telefono: il gioco è più divertente di prima?
-- [ ] **(TU)** Gli FPS reggono anche con particelle e molti nemici?
+- [x] Numeri di danno: 24 scritte pre-create, mosse e sfumate a mano nel ciclo di
+      gioco. Le animazioni automatiche di Phaser creerebbero un oggetto per colpo
+- [x] Lampo del nemico: gestito con una scadenza numerica, senza timer
+- [x] Flash e scossa: effetti della telecamera di Phaser, non creano oggetti
+- [x] Particelle: emettitori creati all'avvio, con il loro pool interno
+
+### 2.6 Prestazioni e bilanciamento — misurati
+
+- [x] **60 fps medi su 18 secondi con 140 nemici contemporaneamente a schermo**
+      più particelle. Misura reale, non stima
+- [x] **Durata di una partita stando completamente fermi: 69 secondi**, ondata 6,
+      895 punti (in Milestone 1 erano 39 secondi). Muovendosi si dura di più
+- [x] Progressione delle ondate: 1s, 9s, 18s, 28s, 40s, 55s
+- [x] Chi ti uccide si legge chiaramente: il corazzato viola, che regge quattro
+      colpi e ti arriva addosso
+
+### 2.7 Correzioni fatte durante il lavoro
+
+- [x] `createMultiple` senza il parametro `key` non creava **niente**: il pool dei
+      nemici restava vuoto e non arrivava mai nessuno, senza nessun errore
+- [x] `create()` ora chiude una eventuale schermata di game over rimasta aperta:
+      senza, una partita nuova partirebbe col velo scuro incollato sopra
+
+### 2.8 Verifica sul telefono — TOCCA A TE
+
+- [ ] **(TU)** Il gioco è più divertente di prima?
+- [ ] **(TU)** Gli FPS reggono con particelle e molti nemici?
+- [ ] **(TU)** Lo screen shake ti dà fastidio? (si spegne da
+      `config.feedback.screenShake.attivo`)
+- [ ] **(TU)** Provare a cambiare qualche numero in `config.js` e vedere l'effetto
 
 ---
 

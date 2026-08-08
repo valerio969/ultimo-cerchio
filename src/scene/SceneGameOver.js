@@ -44,7 +44,7 @@ export default class SceneGameOver extends Phaser.Scene {
     const centroY = altezza * 0.42;
 
     this.testo(centroX, centroY - CONFIG.gameOver.dimensioneTitolo * this.scala * 1.9,
-      'ELIMINATO', CONFIG.gameOver.dimensioneTitolo, CONFIG.colori.nemico);
+      'ELIMINATO', CONFIG.gameOver.dimensioneTitolo, CONFIG.colori.pericolo);
 
     this.testo(centroX, centroY,
       String(punteggio), CONFIG.gameOver.dimensionePunteggio, CONFIG.colori.testo);
@@ -52,9 +52,21 @@ export default class SceneGameOver extends Phaser.Scene {
     this.testo(centroX, centroY + CONFIG.gameOver.dimensionePunteggio * this.scala * 0.85,
       'PUNTI', CONFIG.hud.dimensioneTestoPiccolo, CONFIG.colori.testoSpento);
 
+    // Fin dove sei arrivato. È l'informazione che ti dice se stai migliorando:
+    // il punteggio dipende anche da che tipi di nemico ti sono capitati,
+    // l'ondata no.
+    const ondata = dati?.ondata ?? 0;
     this.testo(
       centroX,
-      centroY + CONFIG.gameOver.dimensionePunteggio * this.scala * 1.6,
+      centroY + CONFIG.gameOver.dimensionePunteggio * this.scala * 1.45,
+      `caduto nell'ondata ${ondata}`,
+      CONFIG.hud.dimensioneTestoPiccolo,
+      CONFIG.colori.annuncioOndata
+    );
+
+    this.testo(
+      centroX,
+      centroY + CONFIG.gameOver.dimensionePunteggio * this.scala * 2.0,
       nuovoRecord ? 'NUOVO RECORD!' : `record  ${record}`,
       CONFIG.hud.dimensioneTestoPiccolo,
       nuovoRecord ? CONFIG.colori.vita : CONFIG.colori.testoSpento
