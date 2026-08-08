@@ -176,4 +176,7 @@ gioco.events.once('ready', () => {
 // variabile globale con quel nome per il <div id="gioco"> della pagina.
 if (import.meta.env.DEV) {
   window.debugGioco = gioco;
+  // Per guardare il messaggio "Aggiungi alla schermata Home" da un computer,
+  // senza avere un iPhone in mano: scrivi questo nella console del browser.
+  window.debugMessaggioInstallazione = () => mostraMessaggioInstallazione(true);
 }
