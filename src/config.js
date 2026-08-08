@@ -355,6 +355,7 @@ export const CONFIG = {
     dimensioneTestoPiccolo: 20,
     dimensioneAnnuncioOndata: 54,
     dimensioneContatoreOndata: 20,
+    dimensioneTestoInizio: 34,
   },
 
   // ==========================================================================
