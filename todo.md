@@ -339,11 +339,67 @@ Tema scelto: **astronavi**.
       con il server spento tutti i file arrivano dalla cache e l'audio si
       decodifica davvero
 
-### 4.6 Verifica finale — TOCCA A TE
+### 4.6 Verifica sul telefono ✅ FATTA DA TE
 
-- [ ] **(TU)** Aprire il gioco e guardare come è venuto
+- [x] Grafica e offline confermati funzionanti
+- [x] **PROBLEMA TROVATO DA TE**: il suono non partiva all'inizio, arrivava dopo
+      qualche secondo di gioco → corretto, vedi Milestone 5
+
+---
+
+## Milestone 5 — Correzione audio e musica
+
+Non era nel piano iniziale: nasce da quello che hai trovato provando il gioco.
+
+### 5.1 Il suono che non partiva all'inizio
+
+- [x] **Causa**: Safari vieta a una pagina web di emettere suoni prima che
+      l'utente abbia toccato lo schermo. Il gioco però spara da solo, quindi i
+      primi colpi cadevano nel silenzio, e il suono si "accendeva" solo quando
+      cominciavi a muovere il dito. Non è aggirabile: è una regola di iOS
+- [x] **Soluzione alla radice**: il gioco non parte finché non tocchi. Compare
+      "TOCCA PER COMINCIARE" e l'arena resta ferma — nessun nemico, nessun colpo,
+      nessun suono. Quando parte il primo colpo, il motore audio è già sveglio
+- [x] Aggiunto anche un risveglio del motore audio a livello di pagina: Safari lo
+      accetta solo dentro la gestione vera dell'evento del browser, mentre Phaser
+      elabora gli eventi al fotogramma dopo — troppo tardi
+- [x] Effetto collaterale gradito: hai un momento per prepararti, invece di
+      trovarti i nemici addosso appena apri il gioco
+- [x] **Verificato**: 6 secondi senza toccare e non parte nessun colpo. Dopo il
+      tocco, 10 spari in 8 secondi col volume giusto sulle 4 corsie
+- [x] Il tocco per cominciare resta anche dopo RICOMINCIA (tua scelta)
+
+### 5.2 La musica di sottofondo
+
+Kenney non ha musica da sottofondo, solo spezzoni brevi. Su tua scelta, la musica
+è **generata dal codice** invece di essere un file.
+
+- [x] Tre strati: un **tappeto** sonoro grave tenuto per sempre dentro un filtro
+      che si apre e chiude lentamente; un **battito** su un tempo su due; e delle
+      **note** acute pescate da una scala pentatonica minore (quella del blues,
+      che in qualunque ordine non stona)
+- [x] **Reagisce al gioco**: più navi ci sono a schermo, più il battito si fa
+      forte e le note frequenti. Da 0 a 20 navi si passa da quasi solo tappeto
+      a musica insistente
+- [x] Sfuma quando muori, così il boato della morte resta in primo piano
+- [x] Regolabile da `config.musica`: volume, battiti al minuto, tonalità, e
+      quante navi servono per la massima intensità. `attiva: false` per spegnerla
+- [x] Il tempo è tenuto sull'orologio del motore audio, non su quello del gioco:
+      con quello del gioco la musica andrebbe a scatti
+- [x] **Pesa ZERO byte.** Un brano di due minuti sarebbe stato 1-2 MB, con un
+      buchino audibile a ogni ripartenza e la conversione di formato per iPhone
+- [x] **Verificato**: 3-4 battiti in 3 secondi (esatti per 76 al minuto), le note
+      aumentano con l'affollamento, il volume sale a 0,3 in dissolvenza
+- [x] **Verificato che non si sommi**: dopo quattro partite di fila sono sempre
+      11 nodi audio, e la musica della partita precedente viene smontata. Senza
+      questo, dopo quattro partite sarebbe stato un muro di suono
+
+### 5.3 Verifica sul telefono — TOCCA A TE
+
+- [ ] **(TU)** Il suono parte **subito** dal primo colpo?
+- [ ] **(TU)** La musica ti piace? Volume giusto? (`config.musica.volume`,
+      oppure `attiva: false` per togliere solo la musica)
+- [ ] **(TU)** Si sente che la musica si intensifica quando ti circondano?
 - [ ] **(TU)** Il volume dello sparo è giusto? (`config.audio.sparo.volume`)
-- [ ] **(TU)** Il volume generale è giusto? (`config.audio.volumeGenerale`,
-      oppure `attivo: false` per spegnere tutto)
 - [ ] **(TU)** Le stelle si vedono bene? (`config.grafica.luminositaSfondo`)
-- [ ] **(TU)** Modalità aereo: il gioco parte **e si sente**?
+- [ ] **(TU)** Modalità aereo: il gioco parte, si sente, e c'è la musica?

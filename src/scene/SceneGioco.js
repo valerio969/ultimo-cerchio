@@ -8,6 +8,7 @@ import Proiettile from '../gioco/Proiettile.js';
 import Controlli from '../gioco/Controlli.js';
 import GestoreOndate from '../gioco/GestoreOndate.js';
 import Suoni from '../gioco/Suoni.js';
+import Musica from '../gioco/Musica.js';
 
 /** Trasforma un colore da 0xff4d5e a "#ff4d5e", che è il formato che vuole il testo. */
 function esadecimale(colore) {
@@ -56,6 +57,7 @@ export default class SceneGioco extends Phaser.Scene {
     this.creaHud();
 
     this.suoni = new Suoni(this);
+    this.musica = new Musica(this);
     this.controlli = new Controlli(this);
     this.ondate = new GestoreOndate(this);
 
@@ -441,6 +443,10 @@ export default class SceneGioco extends Phaser.Scene {
     this.tweens.killTweensOf(this.testoInizio);
     this.testoInizio.destroy();
     this.sottotestoInizio.destroy();
+
+    // La musica parte solo adesso, e non prima: su iPhone il motore audio è
+    // sveglio soltanto dopo che l'utente ha toccato lo schermo.
+    this.musica.avvia();
   }
 
   // ==========================================================================
@@ -529,6 +535,10 @@ export default class SceneGioco extends Phaser.Scene {
 
     this.aggiornaNumeriDanno(tempo);
     this.ondate.aggiorna(delta);
+
+    // La musica si fa più insistente man mano che l'arena si affolla.
+    this.musica.aggiorna(this.gruppoNemici.countActive(true));
+
     this.aggiornaFps(tempo);
   }
 
@@ -715,6 +725,9 @@ export default class SceneGioco extends Phaser.Scene {
     // pausa non partirebbe più, e la morte resterebbe muta.
     this.suoni.suona('gameover');
 
+    // La musica sfuma, così il boato della morte resta solo in primo piano.
+    this.musica.dissolvi();
+
     this.giocatore.body.setVelocity(0, 0);
     this.giocatore.setAlpha(0.35);
 
@@ -772,6 +785,9 @@ export default class SceneGioco extends Phaser.Scene {
     this.scale.off('resize', this.alRidimensionamento, this);
     if (this.controlli) this.controlli.distruggi();
     if (this.suoni) this.suoni.fermaTutto();
+    // Importante: senza questo, a ogni partita nuova si sommerebbe un altro
+    // tappeto sonoro sopra il precedente, e dopo quattro partite sarebbe un muro.
+    if (this.musica) this.musica.ferma();
     if (this.gruppoProiettili) this.gruppoProiettili.destroy(true);
     if (this.gruppoNemici) this.gruppoNemici.destroy(true);
 
