@@ -180,24 +180,51 @@ Legenda: `[ ]` da fare · `[x]` fatto · **(TU)** = tocca a te, non a Claude
 
 ---
 
-## Milestone 3 — PWA e offline
+## Milestone 3 — PWA e offline ✅ FATTA
 
-**Non si inizia finché la Milestone 2 non è verificata sul telefono.**
+**Fatta prima della Milestone 2, su tua richiesta.**
 
-- [ ] Installare e configurare `vite-plugin-pwa`
-- [ ] Manifest: nome "Ultimo Cerchio", nome corto "Cerchio", `standalone`, `portrait`
-- [ ] Generare le icone 192 e 512 px con le forme del gioco
-- [ ] Service worker che mette in cache tutti gli asset al primo caricamento
-- [ ] Verificare che il peso totale sia molto sotto i 50 MB
-- [ ] Overlay al primo avvio su iPhone: "tocca Condividi → Aggiungi alla schermata
-      Home", mostrato una volta sola
-- [ ] Compilare il gioco per la pubblicazione
-- [ ] **(CONFERMA TUA RICHIESTA)** Caricare il gioco su un hosting statico gratuito
-      con HTTPS — non pubblico niente senza il tuo ok esplicito
-- [ ] **(TU)** Aprire il link dal telefono e installare il gioco sulla Home
-- [ ] **(TU)** Attivare la modalità aereo e verificare che il gioco parta e si giochi
-- [ ] **(TU)** Verificare che l'icona e il nome sulla Home siano quelli giusti
-- [ ] **(TU)** Verificare che a schermo intero non ci sia la barra di Safari
+**Il gioco è online qui:** https://valerio969.github.io/ultimo-cerchio/
+
+- [x] Installare e configurare `vite-plugin-pwa` 1.3.0
+- [x] Manifest: "Ultimo Cerchio" / "Cerchio", `standalone`, `portrait`
+- [x] Icone 192, 512, 180 (iPhone) e 32 px, generate da un unico
+      [`public/icona.svg`](public/icona.svg) con `npm run icone`. L'icona sta
+      dentro la zona sicura, quindi Android non la taglia
+- [x] Service worker che mette in cache tutto al primo caricamento (9 file)
+- [x] Alzato il limite di cache a 4 MB per singolo file: Phaser da solo supera
+      il limite di 2 MB predefinito e sarebbe rimasto fuori dalla cache
+- [x] Peso totale: 1,2 MB. Il limite iOS è 50 MB
+- [x] Messaggio "Aggiungi alla schermata Home" per iPhone, mostrato una volta sola
+- [x] Corretta l'impaginazione di quel messaggio: le frasi si spezzavano a metà
+- [x] `npm run pubblica` per mandare online una versione nuova con un comando
+- [x] Repository pubblico creato e codice caricato
+- [x] GitHub Pages attivo dal ramo `gh-pages`, con HTTPS obbligatorio
+
+### Verifiche fatte da Claude
+
+- [x] **PROVA OFFLINE VERA**: server locale spento e pagina ricaricata → il gioco
+      parte comunque. Le richieste rispondono `200 OK` con il server morto,
+      quindi arrivano dalla cache del service worker
+- [x] Service worker attivo sul sito vero, scope `/ultimo-cerchio/`
+- [x] Il pacchetto del gioco (1,2 MB) è dentro la cache: senza quello in aereo
+      non partirebbe niente
+- [x] Tutti i file serviti con il tipo giusto: `sw.js` come `application/javascript`
+      (se fosse `text/html` il service worker verrebbe rifiutato dal browser)
+- [x] Manifest leggibile online: nome, nome corto, standalone, portrait
+- [x] Il gancio di debug NON è presente nella versione pubblicata
+- [x] Percorsi delle icone scritti senza barra iniziale, così funzionano anche
+      dentro la sottocartella di GitHub Pages
+
+### Verifiche che tocca a te — TOCCA A TE
+
+- [ ] **(TU)** Aprire https://valerio969.github.io/ultimo-cerchio/ da Safari
+- [ ] **(TU)** Installarlo sulla Home seguendo il messaggio che compare
+- [ ] **(TU)** Verificare che l'icona sulla Home sia quella giusta e dica "Cerchio"
+- [ ] **(TU)** Aprirlo dall'icona: **non deve esserci la barra di Safari**
+- [ ] **(TU)** Chiudere il gioco, attivare la **modalità aereo**, riaprirlo:
+      deve partire e si deve poter giocare
+- [ ] **(TU)** Verificare che notch e barra inferiore non coprano niente
 
 ---
 
