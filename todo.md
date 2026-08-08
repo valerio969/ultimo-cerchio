@@ -271,17 +271,79 @@ Legenda: `[ ]` da fare · `[x]` fatto · **(TU)** = tocca a te, non a Claude
 
 ---
 
-## Milestone 4 — Grafica e suono
+## Milestone 4 — Grafica e suono ✅ FATTA
 
-**Solo alla fine. Non si inizia finché la Milestone 3 non funziona in modalità aereo.**
+Tema scelto: **astronavi**.
 
-- [ ] Scegliere e scaricare gli asset CC0 da kenney.nl
-- [ ] Sostituire il quadrato blu con lo sprite del giocatore
-- [ ] Riaccendere `config.giocatore.ruotaVersoIlBersaglio` (ora ha senso)
-- [ ] Sostituire i cerchi rossi con gli sprite dei nemici
-- [ ] Sostituire i puntini bianchi con lo sprite del proiettile
-- [ ] Sfondo dell'arena
-- [ ] Effetti sonori: sparo, nemico colpito, danno subito, game over
-- [ ] Verificare che il peso totale sia ancora sotto i 50 MB
-- [ ] Aggiornare la cache del service worker con i nuovi asset
-- [ ] **(TU)** Verifica finale sul telefono, in modalità aereo
+### 4.1 Gli asset
+
+- [x] Scaricati due pacchetti di Kenney, entrambi **licenza CC0** (uso libero,
+      anche commerciale, nessun obbligo di citare nessuno):
+      **Simple Space** (navi) e **Sci-Fi Sounds** (effetti)
+- [x] Tenuti solo i 9 disegni che servono davvero (36 KB in tutto), il resto buttato
+- [x] Le navi di Kenney sono **bianche di proposito**: il gioco le colora al volo
+      con i colori di `config.colori`. Così lo stesso disegno fa da nemico rosso,
+      arancione o viola, e cambiando un colore cambia tutto senza rifare file
+
+### 4.2 La grafica
+
+- [x] Giocatore: `ship_G`, colorato di blu
+- [x] Nemico normale: `enemy_A` rosso · veloce: `enemy_B` arancione ·
+      corazzato: `enemy_E` viola. Tre sagome ben diverse, riconoscibili a occhio
+- [x] Colpo: `star_small` bianco
+- [x] Sfondo: **campo di 130 stelle** più 6 sassi scuri, al posto della griglia.
+      Sono oggetti immobili creati una volta: nessun aggiornamento, costo quasi zero
+- [x] **Riaccesa la rotazione verso il bersaglio**: ora ha senso, perché una nave
+      ha una punta (un quadrato no, era solo un rombo). La nave gira in modo
+      morbido, i nemici puntano dritto
+- [x] Il colpo parte dalla **punta** della nave, non dal centro
+- [x] Riquadri di collisione rimpiccioliti (55% per la nave, 62% per i nemici):
+      una nave è un triangolo dentro un quadrato, e gli angoli vuoti non devono
+      contare come parte della nave
+
+### 4.3 Il suono
+
+- [x] Cinque effetti: sparo, esplosione, danno subito, inizio ondata, game over
+- [x] **Convertiti da OGG a WAV**, perché iPhone non legge gli OGG. Fatto con
+      ffmpeg, che era già installato sul Mac
+- [x] Scelti i file più CORTI a disposizione: lo sparo è 0,24 secondi, perché
+      parte quattro volte al secondo
+- [x] Volume dello sparo tenuto molto basso (0,14): è quello che senti più spesso
+- [x] **Intonazione spostata a caso a ogni colpo**: è quello che evita l'effetto
+      trapano quando lo stesso suono si ripete quattro volte al secondo
+- [x] **Corsie multiple per effetto** (4 per lo sparo, 5 per le esplosioni): un
+      suono nuovo prende la corsia successiva invece di tagliare quello di prima.
+      Con dieci nemici che esplodono insieme si sente un boato, non un solo tonfo
+- [x] Nessun oggetto creato durante la partita: le corsie sono pre-create
+- [x] Gestito lo sblocco audio di iPhone, che non lascia suonare niente prima che
+      tu abbia toccato lo schermo
+
+### 4.4 Verifiche fatte da Claude
+
+- [x] Tutti i disegni e i suoni si caricano, con barra di caricamento
+- [x] Colori applicati correttamente a ogni tipo di nemico
+- [x] Il lampo bianco del colpo torna al colore del tipo, non al bianco
+- [x] La nave si gira verso il nemico (verificato: 0 gradi con nemico sopra)
+- [x] Corazzato: sempre 4 colpi esatti
+- [x] I 5 suoni partono, coi volumi giusti verificati sul guadagno audio vero
+- [x] 4 spari di fila = 4 suoni contemporanei, con 4 intonazioni diverse
+- [x] **Bilanciamento intatto**: 67 secondi stando fermi, ondata 6 (era 69)
+- [x] **0,48 ms per fotogramma con 140 navi a schermo**: 34 volte sotto il limite
+- [x] Peso totale: **1,7 MB**, cioè 29 volte sotto il limite iOS di 50 MB
+
+### 4.5 Il bug che avrebbe rotto l'offline
+
+- [x] I suoni `.wav` **non venivano messi in cache**: l'elenco delle estensioni
+      da salvare non includeva "wav". Il gioco in modalità aereo sarebbe partito
+      **muto**, senza nessun errore a spiegare perché. Corretto, e verificato:
+      con il server spento tutti i file arrivano dalla cache e l'audio si
+      decodifica davvero
+
+### 4.6 Verifica finale — TOCCA A TE
+
+- [ ] **(TU)** Aprire il gioco e guardare come è venuto
+- [ ] **(TU)** Il volume dello sparo è giusto? (`config.audio.sparo.volume`)
+- [ ] **(TU)** Il volume generale è giusto? (`config.audio.volumeGenerale`,
+      oppure `attivo: false` per spegnere tutto)
+- [ ] **(TU)** Le stelle si vedono bene? (`config.grafica.luminositaSfondo`)
+- [ ] **(TU)** Modalità aereo: il gioco parte **e si sente**?

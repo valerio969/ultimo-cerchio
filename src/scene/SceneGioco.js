@@ -7,7 +7,7 @@ import Nemico from '../gioco/Nemico.js';
 import Proiettile from '../gioco/Proiettile.js';
 import Controlli from '../gioco/Controlli.js';
 import GestoreOndate from '../gioco/GestoreOndate.js';
-import { nomeTextureNemico } from './SceneAvvio.js';
+import Suoni from '../gioco/Suoni.js';
 
 /** Trasforma un colore da 0xff4d5e a "#ff4d5e", che è il formato che vuole il testo. */
 function esadecimale(colore) {
@@ -43,7 +43,11 @@ export default class SceneGioco extends Phaser.Scene {
     // L'arena è grande esattamente come lo schermo: nessuno scorrimento.
     this.physics.world.setBounds(0, 0, this.scale.width, this.scale.height);
 
-    this.creaGriglia();
+    // Il nemico bersagliato in questo istante. Lo calcoliamo una volta per
+    // fotogramma e lo condividono sia la mira che lo sparo.
+    this.bersaglioCorrente = null;
+
+    this.creaSfondo();
     this.creaGiocatore();
     this.creaPool();
     this.creaParticelle();
@@ -51,6 +55,7 @@ export default class SceneGioco extends Phaser.Scene {
     this.creaCollisioni();
     this.creaHud();
 
+    this.suoni = new Suoni(this);
     this.controlli = new Controlli(this);
     this.ondate = new GestoreOndate(this);
 
@@ -62,11 +67,63 @@ export default class SceneGioco extends Phaser.Scene {
   // COSTRUZIONE
   // ==========================================================================
 
-  /** Griglia di sfondo: serve a percepire il movimento, altrimenti su un fondo
-   *  nero uniforme non si capisce se ci si sta muovendo o no. */
-  creaGriglia() {
+  /**
+   * LO SFONDO
+   *
+   * Serve a percepire il movimento: su un nero uniforme non capiresti se ti stai
+   * muovendo o no. Ora che siamo nello spazio è un campo di stelle, con qualche
+   * sasso scuro per dare profondità.
+   *
+   * Sono tutti oggetti IMMOBILI, creati una volta e mai più toccati. Non hanno
+   * nessun aggiornamento per fotogramma, e siccome usano tutti lo stesso disegno
+   * la scheda grafica li disegna in blocco: costano quasi zero.
+   */
+  creaSfondo() {
     this.griglia = this.add.graphics().setDepth(0);
     this.disegnaGriglia();
+
+    this.oggettiSfondo = [];
+    const larghezza = this.scale.width;
+    const altezza = this.scale.height;
+    const luminosita = CONFIG.grafica.luminositaSfondo;
+
+    // --- Le stelle ---
+    for (let i = 0; i < CONFIG.grafica.stelleSfondo; i += 1) {
+      const dimensione = Phaser.Math.FloatBetween(
+        CONFIG.grafica.stellaMinima, CONFIG.grafica.stellaMassima
+      ) * this.scala;
+
+      const stella = this.add
+        .image(
+          Phaser.Math.Between(0, larghezza),
+          Phaser.Math.Between(0, altezza),
+          CONFIG.sprite.stellaSfondo
+        )
+        .setDisplaySize(dimensione, dimensione)
+        .setTint(CONFIG.colori.stella)
+        // Stelle di luminosità diversa: tutte uguali sembrerebbero una texture
+        // ripetuta, non un cielo.
+        .setAlpha(Phaser.Math.FloatBetween(0.3, 1) * luminosita)
+        .setDepth(-2);
+      this.oggettiSfondo.push(stella);
+    }
+
+    // --- I sassi ---
+    for (let i = 0; i < CONFIG.grafica.meteoreSfondo; i += 1) {
+      const dimensione = Phaser.Math.Between(40, 110) * this.scala;
+      const sasso = this.add
+        .image(
+          Phaser.Math.Between(0, larghezza),
+          Phaser.Math.Between(0, altezza),
+          Phaser.Utils.Array.GetRandom(CONFIG.sprite.meteore)
+        )
+        .setDisplaySize(dimensione, dimensione)
+        .setTint(CONFIG.colori.meteora)
+        .setAlpha(luminosita)
+        .setRotation(Phaser.Math.FloatBetween(0, Math.PI * 2))
+        .setDepth(-1);
+      this.oggettiSfondo.push(sasso);
+    }
   }
 
   disegnaGriglia() {
@@ -98,7 +155,7 @@ export default class SceneGioco extends Phaser.Scene {
       runChildUpdate: false,
     });
     this.gruppoProiettili.createMultiple({
-      key: 'proiettile',
+      key: CONFIG.sprite.proiettile,
       quantity: CONFIG.arma.proiettiliInPool,
       active: false,
       visible: false,
@@ -112,10 +169,10 @@ export default class SceneGioco extends Phaser.Scene {
     // ATTENZIONE: la "key" qui è obbligatoria. Senza, createMultiple non crea
     // proprio niente e il pool resta vuoto — il gioco parte ma non arriva mai
     // nessun nemico, senza nessun messaggio d'errore.
-    // Quale immagine mettiamo è indifferente: attiva() la sostituisce con quella
+    // Quale disegno mettiamo è indifferente: attiva() lo sostituisce con quello
     // del tipo giusto. Usiamo il primo tipo definito in config.
     this.gruppoNemici.createMultiple({
-      key: nomeTextureNemico(Object.keys(CONFIG.tipiNemico)[0]),
+      key: Object.values(CONFIG.tipiNemico)[0].sprite,
       quantity: CONFIG.nemici.nemiciInPool,
       active: false,
       visible: false,
@@ -332,6 +389,7 @@ export default class SceneGioco extends Phaser.Scene {
   alInizioOndata(numero) {
     this.testoOndata.setText(`ONDATA ${numero}`);
     this.mostraAnnuncio(`ONDATA ${numero}`, CONFIG.colori.annuncioOndata);
+    this.suoni.suona('ondata');
   }
 
   alFineOndata() {
@@ -376,6 +434,13 @@ export default class SceneGioco extends Phaser.Scene {
 
   update(tempo, delta) {
     if (this.partitaFinita) return;
+
+    // Cerchiamo il nemico bersagliato UNA VOLTA SOLA per fotogramma. Serve sia
+    // per girare la nave verso di lui, sia per sparargli: cercarlo due volte
+    // sarebbe lo stesso lavoro fatto due volte per niente.
+    this.bersaglioCorrente = this.nemicoPiuVicino(
+      this.giocatore.x, this.giocatore.y, this.giocatore.raggioTiro
+    );
 
     this.giocatore.aggiorna(tempo, delta, this.controlli);
 
@@ -463,6 +528,7 @@ export default class SceneGioco extends Phaser.Scene {
     // creare un oggetto nuovo. Vedi config.arma.proiettiliInPool.
     if (!proiettile) return null;
 
+    this.suoni.suona('sparo');
     return proiettile.attiva(x, y, angolo);
   }
 
@@ -528,6 +594,7 @@ export default class SceneGioco extends Phaser.Scene {
 
     if (morto) {
       this.esplodi(nemico);
+      this.suoni.suona('esplosione');
       this.punteggio += nemico.punti;
       this.testoPunteggio.setText(String(this.punteggio));
       nemico.spegni();
@@ -552,6 +619,7 @@ export default class SceneGioco extends Phaser.Scene {
 
     const morto = giocatore.subisciDanno(nemico.danno, tempo);
     this.disegnaBarraVita();
+    this.suoni.suona('danno');
 
     // Lampo rosso su tutto lo schermo. Usiamo il flash della telecamera di
     // Phaser invece di un rettangolo nostro: non crea nessun oggetto.
@@ -574,6 +642,10 @@ export default class SceneGioco extends Phaser.Scene {
 
   finePartita() {
     this.partitaFinita = true;
+
+    // Il suono va fatto partire PRIMA di mettere in pausa la scena: dopo la
+    // pausa non partirebbe più, e la morte resterebbe muta.
+    this.suoni.suona('gameover');
 
     this.giocatore.body.setVelocity(0, 0);
     this.giocatore.setAlpha(0.35);
@@ -611,6 +683,13 @@ export default class SceneGioco extends Phaser.Scene {
     this.posizionaHud();
     this.disegnaBarraVita();
 
+    // Le stelle che sono rimaste fuori dallo schermo nuovo le riportiamo dentro,
+    // altrimenti girando il telefono metà del cielo sparirebbe.
+    for (const oggetto of this.oggettiSfondo) {
+      if (oggetto.x > larghezza) oggetto.x = Phaser.Math.Between(0, larghezza);
+      if (oggetto.y > altezza) oggetto.y = Phaser.Math.Between(0, altezza);
+    }
+
     // Se lo schermo si è rimpicciolito, il giocatore potrebbe essere rimasto fuori.
     const meta = this.giocatore.displayWidth / 2;
     this.giocatore.setPosition(
@@ -624,6 +703,7 @@ export default class SceneGioco extends Phaser.Scene {
   allaChiusura() {
     this.scale.off('resize', this.alRidimensionamento, this);
     if (this.controlli) this.controlli.distruggi();
+    if (this.suoni) this.suoni.fermaTutto();
     if (this.gruppoProiettili) this.gruppoProiettili.destroy(true);
     if (this.gruppoNemici) this.gruppoNemici.destroy(true);
 

@@ -63,15 +63,71 @@ export const CONFIG = {
     testoSpento: 0x6a6a8a,     // scritte secondarie
     annuncioOndata: 0xffd54d,  // la scritta "ONDATA 3"
     pericolo: 0xff4d5e,        // la scritta "ELIMINATO" del game over
+    stella: 0x8f8fc4,          // le stelline dello sfondo
+    meteora: 0x24243d,         // i sassi scuri dello sfondo
   },
 
   // ==========================================================================
-  // GIOCATORE — il quadrato blu
+  // SPRITE — quali disegni usa il gioco
+  //
+  // Sono asset di Kenney (kenney.nl), licenza CC0: si possono usare liberamente,
+  // anche commercialmente, senza obbligo di citare nessuno.
+  //
+  // Sono tutti BIANCHI di proposito: il gioco li colora al volo con i colori qui
+  // sopra. Così lo stesso disegno può fare da nemico rosso, arancione o viola, e
+  // se cambi un colore cambia tutto senza rifare nessun file.
+  //
+  // I file stanno in public/sprite/. Per cambiare una nave basta scrivere qui il
+  // nome di un altro file, senza il ".png".
+  // ==========================================================================
+  sprite: {
+    giocatore: 'ship_G',
+    proiettile: 'star_small',
+    stellaSfondo: 'star_tiny',
+    meteore: ['meteor_large', 'meteor_small', 'meteor_detailedSmall'],
+  },
+
+  // ==========================================================================
+  // AUDIO
+  //
+  // Suoni di Kenney (kenney.nl), licenza CC0. Convertiti in WAV perché iPhone
+  // non legge gli OGG originali.
+  //
+  // "variazioneTono" è la cosa che fa la differenza fra un gioco e un trapano:
+  // ogni colpo viene suonato con l'intonazione spostata a caso di un pizzico, così
+  // quattro spari al secondo non suonano tutti identici. È misurata in centesimi
+  // di semitono: 200 vale un tono intero in su o in giù.
+  // ==========================================================================
+  audio: {
+    attivo: true,
+    volumeGenerale: 0.8,       // da 0 (muto) a 1
+
+    // Lo sparo è quello che senti più spesso: tenuto basso di proposito.
+    // Se lo alzi troppo dopo trenta secondi vuoi spegnere il telefono.
+    sparo: { volume: 0.14, variazioneTono: 240, quantiInsieme: 4 },
+    esplosione: { volume: 0.32, variazioneTono: 200, quantiInsieme: 5 },
+    danno: { volume: 0.55, variazioneTono: 120, quantiInsieme: 2 },
+    ondata: { volume: 0.3, variazioneTono: 0, quantiInsieme: 1 },
+    gameover: { volume: 0.6, variazioneTono: 0, quantiInsieme: 1 },
+  },
+
+  // ==========================================================================
+  // GIOCATORE — la tua navicella
   // ==========================================================================
   giocatore: {
-    dimensione: 46,            // quanto è grande il lato del quadrato
+    dimensione: 52,            // quanto è grande la navicella
     velocita: 430,             // velocità MASSIMA di movimento
     vitaMassima: 100,          // la barra della vita parte da qui
+
+    // Il riquadro delle collisioni, come frazione del disegno.
+    // Una navicella è un triangolo: se il riquadro fosse pieno, gli angoli vuoti
+    // in alto conterebbero come parte della nave e ti sembrerebbe di essere
+    // colpito dal nulla. 0.55 tiene solo il corpo centrale.
+    riquadroCollisione: 0.55,
+
+    // Quanto velocemente la nave si gira verso il bersaglio (radianti per
+    // fotogramma). Più basso = gira più morbida e pigra, più alto = scatta.
+    velocitaRotazione: 0.32,
 
     // Dopo aver preso un colpo sei invulnerabile per questo tempo e lampeggi.
     // Serve a non morire in un istante quando sei circondato.
@@ -79,13 +135,12 @@ export const CONFIG = {
     invulnerabilitaDopoDanno: 600,
     lampeggioIntervallo: 70,   // ogni quanto lampeggia mentre è invulnerabile
 
-    // Se il personaggio si gira verso il nemico che sta bersagliando.
-    // Lo lascio SPENTO, e ti spiego perché: un quadrato è simmetrico, quindi
-    // girandolo non capisci dove sta puntando — diventa solo un rombo, senza
-    // aggiungere informazione. La direzione la leggi già dai proiettili che partono.
-    // In Milestone 4, quando ci sarà uno sprite vero con un davanti e un dietro,
-    // questa riga diventerà utile: metti true e il personaggio guarderà il nemico.
-    ruotaVersoIlBersaglio: false,
+    // La nave si gira verso il nemico che sta bersagliando.
+    // Ora è ACCESO. Ai tempi delle forme geometriche era spento, perché un
+    // quadrato è simmetrico e girandolo non si capiva dove puntasse: diventava
+    // solo un rombo. Una navicella invece ha una punta, quindi girarla dice
+    // esattamente chi stai bersagliando.
+    ruotaVersoIlBersaglio: true,
   },
 
   // ==========================================================================
@@ -112,8 +167,8 @@ export const CONFIG = {
     intervalloSparo: 260,      // ogni quanto parte un colpo. PIÙ BASSO = più veloce
     danno: 100,                // quanta vita toglie un colpo
     raggioTiro: 470,           // oltre questa distanza il nemico non viene bersagliato
-    velocitaProiettile: 950,   // quanto vola veloce il puntino bianco
-    dimensioneProiettile: 12,
+    velocitaProiettile: 950,   // quanto vola veloce il colpo
+    dimensioneProiettile: 27,  // il colpo è una stellina: sotto i 24 non si legge
 
     // Quanti proiettili vengono preparati in anticipo all'avvio (object pooling).
     // Non vengono mai creati o distrutti durante la partita: si riusano.
@@ -134,8 +189,9 @@ export const CONFIG = {
   tipiNemico: {
     normale: {
       etichetta: 'normale',
+      sprite: 'enemy_A',       // il tridente con due sfere ai piedi
       colore: 0xff4d5e,        // rosso
-      dimensione: 42,
+      dimensione: 48,
       velocita: 150,
       vita: 100,               // un colpo
       danno: 14,               // quanta vita ti toglie al contatto
@@ -144,8 +200,9 @@ export const CONFIG = {
 
     veloce: {
       etichetta: 'veloce',
+      sprite: 'enemy_B',       // affilato e appuntito: si vede che corre
       colore: 0xffa64d,        // arancione: si distingue a colpo d'occhio dal rosso
-      dimensione: 32,          // più piccolo, quindi più difficile da colpire
+      dimensione: 38,          // più piccolo, quindi più difficile da colpire
       velocita: 275,           // quasi il doppio del normale: ti raggiunge
       vita: 100,               // un colpo: fragile, ma va preso
       danno: 10,
@@ -154,8 +211,9 @@ export const CONFIG = {
 
     corazzato: {
       etichetta: 'corazzato',
+      sprite: 'enemy_E',       // massiccio, quattro sfere: si vede che è duro
       colore: 0xb44dff,        // viola
-      dimensione: 60,          // grosso e ben visibile
+      dimensione: 72,          // grosso e ben visibile
       velocita: 92,            // lento: hai il tempo di scappare, non di ignorarlo
       vita: 400,               // QUATTRO colpi
       danno: 24,               // se ti prende, fa male
@@ -169,6 +227,11 @@ export const CONFIG = {
   nemici: {
     nemiciInPool: 140,         // quanti nemici vengono preparati in anticipo
     margineIngresso: 40,       // quanto fuori dal bordo appaiono, per entrare in scena
+
+    // Il riquadro delle collisioni, come frazione del disegno. Le navi nemiche
+    // hanno bracci e punte che lasciano molto vuoto negli angoli dell'immagine:
+    // 0.62 tiene il corpo e ignora il vuoto, così non vieni colpito dall'aria.
+    riquadroCollisione: 0.62,
   },
 
   // ==========================================================================
@@ -315,8 +378,21 @@ export const CONFIG = {
     // e resta a 60 fps. Se il tuo telefono fa fatica, prova a metterlo a 1.5 o 1.
     densitaPixelMassima: 2,
 
-    disegnaGriglia: true,      // la griglia di sfondo, aiuta a percepire il movimento
+    // --- Lo sfondo ---
+    // Adesso che siamo nello spazio, la griglia è sostituita da un campo di
+    // stelle. Serve alla stessa cosa: su un nero uniforme non capiresti se ti
+    // stai muovendo. Se preferisci la griglia, rimetti true qui sotto.
+    disegnaGriglia: false,
     dimensioneCellaGriglia: 72,
+
+    stelleSfondo: 130,         // quante stelline. Sono immobili: non costano nulla
+    stellaMinima: 4,           // la stella più piccola
+    stellaMassima: 13,         // la più grande
+    meteoreSfondo: 6,          // qualche sasso scuro, per dare profondità
+    // Quanto si vedono le stelle. 0 = sfondo nero vuoto.
+    // Attenzione ad abbassarlo troppo: se le stelle non si vedono, mentre ti
+    // muovi non hai nessun riferimento e sembra di stare fermo.
+    luminositaSfondo: 0.9,
   },
 
   // ==========================================================================

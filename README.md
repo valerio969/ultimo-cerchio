@@ -43,6 +43,24 @@ Si può cambiare come si sente il gioco senza toccare una riga di logica.
 - [`spec.md`](spec.md) — i requisiti
 - [`todo.md`](todo.md) — le milestone divise in task, con lo stato di avanzamento
 
+## Asset
+
+Grafica e suoni sono di **[Kenney](https://kenney.nl)**, licenza
+[CC0](https://creativecommons.org/publicdomain/zero/1.0/) — uso libero, anche
+commerciale, senza obbligo di attribuzione. Lo citiamo comunque, perché è giusto.
+
+- [Simple Space](https://kenney.nl/assets/simple-space) — le navi, le stelle, i sassi
+- [Sci-Fi Sounds](https://kenney.nl/assets/sci-fi-sounds) — gli effetti sonori
+
+I disegni sono bianchi di proposito: il gioco li colora al volo, così lo stesso
+file fa da nemico rosso, arancione o viola. I colori stanno in `src/config.js`.
+
+I suoni originali sono in formato OGG, che iPhone non sa leggere: sono stati
+convertiti in WAV.
+
+L'icona (`public/icona.svg`) è disegnata a mano; le PNG si rigenerano con
+`npm run icone`.
+
 ## Licenza
 
-Codice: MIT.
+Codice: MIT. Asset: CC0 (vedi sopra).
