@@ -55,9 +55,13 @@ function segnaComeVisto() {
 /**
  * Mostra il messaggio, se serve. Se non siamo su iPhone, o il gioco è già
  * installato, o l'hai già chiuso una volta, non fa niente.
+ *
+ * @param {boolean} forza  Salta tutti i controlli e mostra il messaggio comunque.
+ *                         Serve solo durante lo sviluppo, per poterlo guardare
+ *                         da un computer senza avere un iPhone in mano.
  */
-export function mostraMessaggioInstallazione() {
-  if (!eApple() || eGiaInstallato() || giaVisto()) return;
+export function mostraMessaggioInstallazione(forza = false) {
+  if (!forza && (!eApple() || eGiaInstallato() || giaVisto())) return;
 
   const foglio = document.createElement('div');
   foglio.id = 'messaggio-installazione';
@@ -81,9 +85,24 @@ export function mostraMessaggioInstallazione() {
         Così ci giochi a schermo intero e anche <strong>senza internet</strong>.
       </p>
       <ol class="mi-passi">
-        <li><span class="mi-icona">${iconaCondividi}</span> Tocca Condividi, in basso nella barra di Safari</li>
-        <li><span class="mi-numero">2</span> Scorri e tocca <strong>Aggiungi alla schermata Home</strong></li>
-        <li><span class="mi-numero">3</span> Tocca <strong>Aggiungi</strong> in alto a destra</li>
+        <!--
+          NOTA: il testo di ogni riga va racchiuso in UN SOLO <span>.
+          La riga è disposta in orizzontale (flex), quindi ogni pezzo di testo
+          sciolto diventerebbe un elemento a sé con il suo spazio: il grassetto
+          finirebbe staccato dal resto e la frase si spezzerebbe a metà.
+        -->
+        <li>
+          <span class="mi-icona">${iconaCondividi}</span>
+          <span class="mi-frase">Tocca <strong>Condividi</strong>, in basso nella barra di Safari</span>
+        </li>
+        <li>
+          <span class="mi-numero">2</span>
+          <span class="mi-frase">Scorri e tocca <strong>Aggiungi alla schermata Home</strong></span>
+        </li>
+        <li>
+          <span class="mi-numero">3</span>
+          <span class="mi-frase">Tocca <strong>Aggiungi</strong>, in alto a destra</span>
+        </li>
       </ol>
       <button type="button" class="mi-chiudi">Ho capito</button>
     </div>`;
@@ -144,6 +163,11 @@ export function mostraMessaggioInstallazione() {
       border-bottom: 1px solid #21213c;
     }
     #messaggio-installazione .mi-passi li:last-child { border-bottom: none; }
+
+    /* Il testo occupa tutto lo spazio che resta accanto all'icona, e va a capo
+       normalmente al suo interno invece di spezzarsi in pezzi separati. */
+    #messaggio-installazione .mi-frase { flex: 1 1 auto; }
+    #messaggio-installazione .mi-frase strong { color: #e8e8f0; font-weight: 600; }
 
     #messaggio-installazione .mi-icona,
     #messaggio-installazione .mi-numero {
