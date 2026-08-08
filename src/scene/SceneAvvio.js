@@ -3,6 +3,16 @@ import { CONFIG } from '../config.js';
 import { scalaDi } from '../scala.js';
 
 /**
+ * Il nome con cui è salvata l'immagine di un tipo di nemico.
+ * Sta qui perché lo usano sia questa scena (che le crea) sia i nemici
+ * (che le usano): se il nome lo decidesse ognuno per conto suo, prima o poi
+ * si scriverebbero in modo diverso e il gioco mostrerebbe un riquadro vuoto.
+ */
+export function nomeTextureNemico(nomeTipo) {
+  return `nemico-${nomeTipo}`;
+}
+
+/**
  * SCENA DI AVVIO
  *
  * In Milestone 1 non abbiamo nessun file grafico: il giocatore è un quadrato blu,
@@ -38,16 +48,29 @@ export default class SceneAvvio extends Phaser.Scene {
       CONFIG.colori.giocatore
     );
 
-    this.creaCerchio(
-      'nemico',
-      Math.ceil(CONFIG.nemici.dimensione * scala * FATTORE),
-      CONFIG.colori.nemico
-    );
+    // Un cerchio per ogni tipo di nemico, con il suo colore e la sua stazza.
+    // Il ciclo legge i tipi da config.js: se ne aggiungi uno lì, la sua texture
+    // viene creata da sola, senza toccare questo file.
+    for (const [nome, tipo] of Object.entries(CONFIG.tipiNemico)) {
+      this.creaCerchio(
+        nomeTextureNemico(nome),
+        Math.ceil(tipo.dimensione * scala * FATTORE),
+        tipo.colore
+      );
+    }
 
     this.creaCerchio(
       'proiettile',
       Math.ceil(CONFIG.arma.dimensioneProiettile * scala * FATTORE),
       CONFIG.colori.proiettile
+    );
+
+    // Un quadratino bianco per le particelle delle esplosioni. Lo coloriamo poi
+    // di volta in volta col colore del nemico che è esploso.
+    this.creaQuadrato(
+      'scheggia',
+      Math.ceil(CONFIG.feedback.particelle.dimensione * scala * FATTORE),
+      0xffffff
     );
 
     // Tutto pronto: si comincia a giocare.
