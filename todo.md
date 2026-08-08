@@ -216,13 +216,14 @@ Legenda: `[ ]` da fare · `[x]` fatto · **(TU)** = tocca a te, non a Claude
 - [x] `create()` ora chiude una eventuale schermata di game over rimasta aperta:
       senza, una partita nuova partirebbe col velo scuro incollato sopra
 
-### 2.8 Verifica sul telefono — TOCCA A TE
+### 2.8 Verifica sul telefono ✅ FATTA DA TE
 
-- [ ] **(TU)** Il gioco è più divertente di prima?
-- [ ] **(TU)** Gli FPS reggono con particelle e molti nemici?
-- [ ] **(TU)** Lo screen shake ti dà fastidio? (si spegne da
-      `config.feedback.screenShake.attivo`)
-- [ ] **(TU)** Provare a cambiare qualche numero in `config.js` e vedere l'effetto
+- [x] Il gioco funziona e va tutto bene — confermato da te
+- [x] **Lo screen shake dava fastidio → SPENTO** (`feedback.screenShake.attivo: false`)
+      Il danno resta leggibile: lo schermo lampeggia di rosso e il personaggio
+      lampeggia per mezzo secondo. I valori restano tarati in `config.js`, pronti
+      se un giorno vorrai riprovarlo
+- [ ] **(TU, quando ti va)** Provare a cambiare qualche numero in `config.js`
 
 ---
 
@@ -262,15 +263,11 @@ Legenda: `[ ]` da fare · `[x]` fatto · **(TU)** = tocca a te, non a Claude
 - [x] Percorsi delle icone scritti senza barra iniziale, così funzionano anche
       dentro la sottocartella di GitHub Pages
 
-### Verifiche che tocca a te — TOCCA A TE
+### Verifiche fatte da te ✅ CONFERMATE
 
-- [ ] **(TU)** Aprire https://valerio969.github.io/ultimo-cerchio/ da Safari
-- [ ] **(TU)** Installarlo sulla Home seguendo il messaggio che compare
-- [ ] **(TU)** Verificare che l'icona sulla Home sia quella giusta e dica "Cerchio"
-- [ ] **(TU)** Aprirlo dall'icona: **non deve esserci la barra di Safari**
-- [ ] **(TU)** Chiudere il gioco, attivare la **modalità aereo**, riaprirlo:
-      deve partire e si deve poter giocare
-- [ ] **(TU)** Verificare che notch e barra inferiore non coprano niente
+- [x] Aperto da Safari e installato sulla schermata Home
+- [x] **FUNZIONA IN MODALITÀ AEREO** — confermato da te sul telefono vero
+- [x] Icona, nome, schermo intero, notch: tutto a posto
 
 ---
 
